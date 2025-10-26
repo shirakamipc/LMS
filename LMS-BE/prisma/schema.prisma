@@ -1,0 +1,351 @@
+// This is your Prisma schema file
+// Learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  fullName      String?
+  passwordHash  String
+  avatarUrl     String?
+  role          Role     @default(USER)
+  lastLoginAt   DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  posts         Post[]
+  comments      Comment[]
+  postReactions PostReaction[]
+  commentReacts CommentReaction[]
+  bookmarks     UserPostArchive[]
+  notifications Notification[]       @relation("NotificationRecipient")
+  actorNotifs   Notification[]       @relation("NotificationActor")
+  uploads       MediaUpload[]
+  sessions      RefreshSession[]
+  enrollments   CourseEnrollment[]
+  lessonProgress LessonProgress[]
+  quizAttempts  QuizAttempt[]
+
+  @@map("users")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+model RefreshSession {
+  id           String   @id @default(cuid())
+  userId       String
+  refreshToken String   @unique
+  userAgent    String?
+  ip           String?
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("refresh_sessions")
+}
+
+model Post {
+  id           String   @id @default(cuid())
+  userId       String
+  heading      String
+  descriptions String
+  bannerUrl    String
+  slug         String   @unique
+  content      Json
+  isPublished  Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  author       User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  comments     Comment[]
+  reactions    PostReaction[]
+  archivedBy   UserPostArchive[]
+
+  @@index([userId])
+  @@map("posts")
+}
+
+model PostReaction {
+  id        String   @id @default(cuid())
+  postId    String
+  userId    String
+  emoji     String
+  createdAt DateTime @default(now())
+
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userId])
+  @@index([postId])
+  @@index([userId])
+  @@map("post_reactions")
+}
+
+model Comment {
+  id               String    @id @default(cuid())
+  postId           String
+  userId           String
+  parentCommentId  String?
+  content          Json
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  post      Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  author    User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parent    Comment?  @relation("CommentToChildren", fields: [parentCommentId], references: [id])
+  children  Comment[] @relation("CommentToChildren")
+  reactions CommentReaction[]
+
+  @@index([postId])
+  @@index([userId])
+  @@map("comments")
+}
+
+model CommentReaction {
+  id        String   @id @default(cuid())
+  commentId String
+  userId    String
+  emoji     String
+  createdAt DateTime @default(now())
+
+  comment Comment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([commentId, userId])
+  @@index([commentId])
+  @@index([userId])
+  @@map("comment_reactions")
+}
+
+model UserPostArchive {
+  id        String   @id @default(cuid())
+  userId    String
+  postId    String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, postId])
+  @@index([userId])
+  @@index([postId])
+  @@map("user_post_archives")
+}
+
+model Notification {
+  id           String   @id @default(cuid())
+  userId       String
+  actorUserId  String?
+  type         String
+  data         Json
+  isRead       Boolean  @default(false)
+  createdAt    DateTime @default(now())
+
+  recipient User @relation("NotificationRecipient", fields: [userId], references: [id], onDelete: Cascade)
+  actor     User? @relation("NotificationActor", fields: [actorUserId], references: [id])
+
+  @@index([userId])
+  @@map("notifications")
+}
+
+model MediaUpload {
+  id        String   @id @default(cuid())
+  userId    String
+  url       String
+  mimeType  String
+  sizeBytes Int
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("media_uploads")
+}
+
+// =============================
+// NEW MODELS FOR COURSE SYSTEM
+// =============================
+
+model LearningPath {
+  id        Int      @id @default(autoincrement())
+  title     String
+  slug      String   @unique
+  imageUrl  String?
+  courses   Course[] // One-to-Many: 1 LearningPath có nhiều Course
+
+  @@map("learning_paths")
+}
+
+model Course {
+  id               Int       @id @default(autoincrement())
+  learningPathId   Int?      // thuộc về LearningPath nào
+  title            String
+  slug             String    @unique
+  description      String?
+  image            String?
+  icon             String?
+  videoType        String?
+  video            String?
+  oldPrice         Int?
+  price            Int?
+  preOrderPrice    Int?
+  studentsCount    Int?
+  isPro            Boolean   @default(false)
+  isSelling        Boolean   @default(false)
+  publishedAt      DateTime?
+  isRegistered     Boolean   @default(false)
+  userProgress     Int?      @default(0)
+  lastCompletedAt  DateTime?
+  imageUrl         String?
+  iconUrl          String?
+  videoUrl         String?
+  isComingSoon     Boolean   @default(false)
+  isPreOrder       Boolean   @default(false)
+  isPublished      Boolean   @default(true)
+  relatedCourses   Json?
+  enrollments      CourseEnrollment[]
+  chapters         Chapter[]
+
+  learningPath     LearningPath? @relation(fields: [learningPathId], references: [id], onDelete: SetNull)
+
+  @@map("courses")
+}
+
+// =============================
+// NEW ENTITIES FROM REQUEST
+// =============================
+
+model CourseEnrollment {
+  id        String   @id @default(cuid())
+  courseId  Int
+  userId    String
+  createdAt DateTime @default(now())
+
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([courseId, userId])
+  @@index([courseId])
+  @@index([userId])
+  @@map("course_enrollments")
+}
+
+model Chapter {
+  id        String   @id @default(cuid())
+  courseId  Int
+  title     String
+  position  Int
+
+  course  Course  @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  lessons Lesson[]
+
+  @@index([courseId])
+  @@index([position])
+  @@map("chapters")
+}
+
+model Lesson {
+  id               String   @id @default(cuid())
+  chapterId        String
+  title            String
+  description      String
+  videoProvider    String   // youtube, vimeo
+  videoRef         String   // e.g. YouTube id
+  durationSeconds  Int
+  position         Int
+
+  chapter Chapter @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  progress LessonProgress[]
+  quizzes  Quiz[]
+
+  @@index([chapterId])
+  @@index([position])
+  @@map("lessons")
+}
+
+model LessonProgress {
+  id                    String   @id @default(cuid())
+  userId                String
+  lessonId              String
+  isCompleted           Boolean  @default(false)
+  watchSeconds          Int      @default(0)
+  lastCheckpointSeconds Int      @default(0)
+  updatedAt             DateTime @updatedAt
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, lessonId])
+  @@index([userId])
+  @@index([lessonId])
+  @@map("lesson_progress")
+}
+
+model Quiz {
+  id               String  @id @default(cuid())
+  lessonId         String
+  title            String
+  timestampSeconds Int
+
+  lesson    Lesson        @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  questions QuizQuestion[]
+  attempts  QuizAttempt[]
+
+  @@index([lessonId])
+  @@map("quizzes")
+}
+
+model QuizQuestion {
+  id           String  @id @default(cuid())
+  quizId       String
+  prompt       String
+  explanation  String?
+
+  quiz     Quiz         @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  options  QuizOption[]
+
+  @@index([quizId])
+  @@map("quiz_questions")
+}
+
+model QuizOption {
+  id         String @id @default(cuid())
+  questionId String
+  text       String
+  isCorrect  Boolean @default(false)
+
+  question QuizQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@index([questionId])
+  @@map("quiz_options")
+}
+
+model QuizAttempt {
+  id            String   @id @default(cuid())
+  quizId        String
+  userId        String
+  correct       Boolean  @default(false)
+  attemptsCount Int      @default(0)
+  answeredAt    DateTime @default(now())
+
+  quiz Quiz @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([quizId, userId])
+  @@index([quizId])
+  @@index([userId])
+  @@map("quiz_attempts")
+}
