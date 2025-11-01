@@ -18,7 +18,7 @@ export default function Header() {
 
   const logOut = async () => {
     try {
-      await AuthApi.logout();
+      // await AuthApi.logout();
       localStorage.removeItem('current_user');
       localStorage.removeItem('access_token');
       client.removeQueries('current_user');
@@ -205,7 +205,6 @@ export default function Header() {
             <>
               <div className='flex gap-6 items-center'>
                 <h2 className='text-gray-600 text-sm font-semibold hidden lg:block'>Khóa học của tôi</h2>
-                <NotificationModal />
                 <UserModal />
               </div>
             </>

@@ -11,11 +11,10 @@ const apiClient = axios.create({
   },
 });
 
-// Optional: Request interceptor to add auth token
-/*
+// Request interceptor to add auth token
 apiClient.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('authToken'); // Or however you store your token
+    const token = localStorage.getItem('access_token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -25,7 +24,6 @@ apiClient.interceptors.request.use(
     return Promise.reject(error);
   }
 );
-*/
 
 // Optional: Response interceptor for global error handling
 /*

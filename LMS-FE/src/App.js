@@ -21,11 +21,12 @@ import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import BookMark from 'Pages/Home/BookMark';
 import ToastTuyn from 'Components/Toast/ToastTuyn';
+import { AuthProvider } from 'Context/AuthContext';
+import ProtectedRoute from 'Components/ProtectedRoute';
 
 function App() {
   return (
-    <>
-      <ToastTuyn />
+    <AuthProvider>
       <ToastContainer
         position='top-right'
         autoClose={1500}
@@ -53,7 +54,11 @@ function App() {
             <Route path='front-end-development' element={<TypeLearning />} />
             <Route path='back-end-development' element={<TypeLearning />} />
           </Route>
-          <Route path='courses' element={<CoursesPage />}>
+          <Route path='courses' element={
+            <ProtectedRoute>
+              <CoursesPage />
+            </ProtectedRoute>
+          }>
             <Route path='' element={<Courses />} />
             <Route path=':slug' element={<Details />} />
             <Route path=':slug/learning' element={<Learning />} />
@@ -63,7 +68,7 @@ function App() {
         </Route>
         <Route path='*' element={<NotFound />} />
       </Routes>
-    </>
+    </AuthProvider>
   );
 }
 
