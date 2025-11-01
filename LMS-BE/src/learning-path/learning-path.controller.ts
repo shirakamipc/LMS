@@ -1,13 +1,22 @@
-import { Controller, Get, Post, Body, Param, Put, Delete, UseGuards } from '@nestjs/common';
+import {
+    Controller,
+    Get,
+    Post,
+    Body,
+    Param,
+    Put,
+    Delete,
+    UseGuards,
+} from '@nestjs/common';
 import { LearningPathService } from './learning-path.service';
-import {CreateLearningPathDto} from "./dto/create-learning-path.dto";
-import {UpdateLearningPathDto} from "./dto/update-learning-path.dto";
+import { CreateLearningPathDto } from './dto/create-learning-path.dto';
+import { UpdateLearningPathDto } from './dto/update-learning-path.dto';
 import { JwtAuthGuard } from '../common/jwt-auth.guard';
 
 @Controller('learning-paths')
-@UseGuards(JwtAuthGuard)
+// @UseGuards(JwtAuthGuard)
 export class LearningPathController {
-    constructor(private readonly service: LearningPathService) {}
+    constructor(private readonly service: LearningPathService) { }
 
     @Get()
     findAll() {
